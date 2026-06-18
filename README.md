@@ -5,9 +5,6 @@ Proyecto Full-Stack Serverless desarrollado para aprender y aplicar los fundamen
 ## 🏗️ Arquitectura
 El proyecto utiliza una arquitectura basada en eventos y servicios gestionados, eliminando la necesidad de gestionar servidores (Serverless).
 
-![Diagrama de Arquitectura](<img width="638" height="292" alt="Captura de pantalla 2026-06-18 a las 17 20 14" src="https://github.com/user-attachments/assets/5c232023-6679-4729-a7a5-aa7b7aeb8ae3" />
-)
-
 ## 🛠️ Stack Tecnológico
 * **Frontend:** HTML5, CSS3, JavaScript.
 * **Seguridad:** Amazon Cognito (Gestión de usuarios y autenticación JWT).
