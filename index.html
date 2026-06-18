@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi API en AWS - Segura</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 40px; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
+        .input-container { margin-bottom: 20px; }
+        input { padding: 10px; width: 250px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        #btnGuardar { background-color: #28a745; color: white; }
+        #btnAuth { background-color: #007bff; color: white; margin-top: 10px; }
+        ul { list-style: none; padding: 0; width: 350px; }
+        .item { background: white; margin: 10px 0; padding: 15px; border-radius: 6px; 
+                display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-del { background: #dc3545; color: white; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h2>Mi API Segura en AWS</h2>
+    
+    <div id="auth-section">
+        <button id="btnAuth">Iniciar Sesión</button>
+    </div>
+
+    <div class="input-container" style="margin-top:20px;">
+        <input type="text" id="inputDato" placeholder="Escribe algo...">
+        <button id="btnGuardar">Guardar</button>
+    </div>
+    <ul id="listaDatos"></ul>
+
+    <script>
+        // CONFIGURACIÓN
+        const DOMAIN = "https://eu-west-1utmemcal6.auth.eu-west-1.amazoncognito.com";
+        const CLIENT_ID = "67bpjnfaf0opo4fcf751u7ckq2";
+        const REDIRECT_URI = "http://127.0.0.1:5500/";
+        const API_URL = 'https://abx380aq8g.execute-api.eu-west-1.amazonaws.com/prod/datos';
+
+        // Lógica de Login
+        window.onload = () => {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const token = params.get('id_token');
+            
+            if (token) {
+                localStorage.setItem('jwt', token);
+                window.location.hash = ""; // Limpiar URL
+            }
+            
+            if (localStorage.getItem('jwt')) {
+                document.getElementById('btnAuth').textContent = "Cerrar Sesión";
+                cargarDatos();
+            }
+        };
+
+        document.getElementById('btnAuth').onclick = () => {
+            if (localStorage.getItem('jwt')) {
+                localStorage.removeItem('jwt');
+                window.location.reload();
+            } else {
+                // Aquí corregimos el problema del error DNS
+                const authUrl = `${DOMAIN}/login?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+                window.location.href = authUrl;
+            }
+        };
+
+        async function fetchSecure(url, options = {}) {
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                alert("Por favor, inicia sesión primero.");
+                return null;
+            }
+            options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+            return fetch(url, options);
+        }
+
+        async function cargarDatos() {
+            const response = await fetchSecure(API_URL);
+            if (!response || !response.ok) return;
+            const data = await response.json();
+            const lista = document.getElementById('listaDatos');
+            lista.innerHTML = '';
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'item';
+                li.innerHTML = `<div>${item.contenido}</div><button class="btn-del" onclick="eliminar('${item.id}')">Eliminar</button>`;
+                lista.appendChild(li);
+            });
+        }
+
+        async function eliminar(id) {
+            await fetchSecure(`${API_URL}?id=${id}`, { method: 'DELETE' });
+            cargarDatos();
+        }
+
+        document.getElementById('btnGuardar').addEventListener('click', async () => {
+            const input = document.getElementById('inputDato');
+            if(!input.value) return;
+            await fetchSecure(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ "contenido": input.value })
+            });
+            input.value = '';
+            cargarDatos();
+        });
+    </script>
+</body>
+</html>
